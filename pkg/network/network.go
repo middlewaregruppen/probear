@@ -37,7 +37,10 @@ func (n *Network) Probe() {
 	}
 
 	for _, p1 := range pods {
-
+		name := fmt.Sprintf("to %s", p1)
+		if registered(n.ProbearTargets, name) {
+			continue
+		}
 		n.ProbearTargets = append(n.ProbearTargets,
 			NetworkTarget{
 				Name: fmt.Sprintf("to %s", p1),
@@ -50,9 +53,7 @@ func (n *Network) Probe() {
 					Timeout: 10,
 				},
 			})
-
 	}
-
 }
 
 func (nt *NetworkTarget) Probe() {
@@ -65,5 +66,15 @@ func (nt *NetworkTarget) Probe() {
 	if nt.TCPSession != nil {
 		nt.TCPSession.Probe(nt.Name)
 	}
+
+}
+
+func registered(nts []NetworkTarget, name string) bool {
+	for _, t := range nts {
+		if t.Name == name {
+			return true
+		}
+	}
+	return false
 
 }
