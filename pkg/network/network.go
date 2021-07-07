@@ -31,6 +31,15 @@ func (n *Network) Probe() {
 		t.Probe()
 	}
 
+	n.updateProbearK8STargets()
+
+	for _, t := range n.ProbearTargets {
+		t.Probe()
+	}
+
+}
+
+func (n *Network) updateProbearK8STargets() {
 	pods, err := k8s.GetProbearPods()
 	if err != nil {
 		log.Printf("err getting probear pods: %s ", err)
@@ -54,6 +63,7 @@ func (n *Network) Probe() {
 				},
 			})
 	}
+
 }
 
 func (nt *NetworkTarget) Probe() {
