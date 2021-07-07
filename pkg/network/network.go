@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -29,6 +30,29 @@ func (n *Network) Probe() {
 	for _, t := range n.NetworkTargets {
 		t.Probe()
 	}
+
+	pods, err := k8s.GetProbearPods()
+	if err != nil {
+		log.Printf("err getting probear pods: %s ", err)
+	}
+
+	for _, p1 := range pods {
+
+		n.ProbearTargets = append(n.ProbearTargets,
+			NetworkTarget{
+				Name: fmt.Sprintf("to %s", p1),
+				TCPConnect: &TCPConnectProbe{
+					Addr:    fmt.Sprintf("%s:2112", p1),
+					Timeout: 10,
+				},
+				TCPSession: &TCPSessionProbe{
+					Addr:    fmt.Sprintf("%s:10000", p1),
+					Timeout: 10,
+				},
+			})
+
+	}
+
 }
 
 func (nt *NetworkTarget) Probe() {
@@ -42,8 +66,4 @@ func (nt *NetworkTarget) Probe() {
 		nt.TCPSession.Probe(nt.Name)
 	}
 
-	_, err := k8s.GetProbearPods()
-	if err != nil {
-		log.Printf("err getting probear pods: %s ", err)
-	}
 }

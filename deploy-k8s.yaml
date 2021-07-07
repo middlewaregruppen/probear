@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: probear
+...
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: probear
+rules:
+- apiGroups: [""] 
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+...
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: probear
+subjects:
+- kind: ServiceAccount
+  name: probear
+roleRef:
+  kind: Role 
+  name: probear
+  apiGroup: rbac.authorization.k8s.io
+...
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: probear
+  labels:
+    app: probear
+spec:
+  selector:
+    matchLabels:
+      app: probear
+  template:
+    metadata:
+      labels:
+        app: probear
+    spec:
+      serviceAccount: probear
+      containers:
+      - name: probear
+        image: middlewaregruppen/probear:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 50m
+            memory: 10Mi
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      volumes:
+      - name: config
+        configMap:
+          name: probear
+      terminationGracePeriodSeconds: 30
+...
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: probear
+data:
+  probear.yaml: |-
+    network:
+      probes:
+      - name: Abba asdlökasd
+        httpGet:
+          url: http://stuff.co.nz
+          timeout: 10
+      - name: Betta
+        tcpConnect:
+          addr: google.com:443
+          timeout: 10
+        tcpSession:
+          addr: 127.0.0.1:10000
+          timeout: 5
+...
+

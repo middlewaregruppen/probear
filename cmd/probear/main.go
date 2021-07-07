@@ -48,7 +48,7 @@ func main() {
 	go http.ListenAndServe(":2112", nil)
 
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Second)
 
 		cnf.Network.Probe()
 		b, err = json.Marshal(cnf)
