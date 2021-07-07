@@ -1,0 +1,13 @@
+network:
+  probes:
+  - name: Abba asdlökasd
+    httpGet:
+      url: http://stuff.co.nz
+      timeout: 10
+  - name: Betta
+    tcpConnect:
+      addr: google.com:443
+      timeout: 10
+    tcpSession:
+      addr: 127.0.0.1:10000
+      timeout: 5
