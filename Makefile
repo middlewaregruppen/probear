@@ -41,12 +41,12 @@ windows: dep
 
 docker_build:
 	docker run --rm -v "${PWD}":/go/src/github.com/middlewaregruppen/probear -w /go/src/github.com/middlewaregruppen/probear golang:${GOVERSION} make fmt test
-	docker build -t ghcr.io/middlewaregruppen/probear:${VERSION} .
-	docker tag ghcr.io/middlewaregruppen/probear:${VERSION} ghcr.io/middlewaregruppen/probear:latest
+	docker build -t docker.io/middlewaregruppen/probear:${VERSION} .
+	docker tag docker.io/middlewaregruppen/probear:${VERSION} docker.io/middlewaregruppen/probear:latest
 
 docker_push:
-	docker push ghcr.io/middlewaregruppen/probear:${VERSION}
-	docker push ghcr.io/middlewaregruppen/probear:latest
+	docker push docker.io/middlewaregruppen/probear:${VERSION}
+	docker push docker.io/middlewaregruppen/probear:latest
 
 docker:  docker_build docker_push
 
