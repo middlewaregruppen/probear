@@ -14,7 +14,7 @@ import (
 
 func main() {
 
-	conf, err := ioutil.ReadFile("./config.yaml")
+	conf, err := ioutil.ReadFile("/config/probear.yaml")
 	if err != nil {
 		log.Fatalf("error loading config %s", err)
 	}
