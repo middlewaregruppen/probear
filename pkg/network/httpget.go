@@ -12,10 +12,12 @@ import (
 )
 
 var (
-	httpget_time = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "probear_httpget_time",
-		Help: "Time in milliseconds it took to retrive the content from the url",
+	httpget_time = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "probear_httpget_time",
+		Help:    "Time in milliseconds it takes to retrive the document",
+		Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 1000, 10000, 100000},
 	}, []string{"probe"})
+
 	httpget_error = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "probear_httpget_error",
 		Help: "Error trying to retive url",
@@ -35,6 +37,8 @@ type HTTPStatus struct {
 }
 
 func (p *HTTPGetProbe) Probe(name string) {
+	// Add 0 to make sure it is exposed.
+	httpget_error.With(prometheus.Labels{"probe": name}).Add(0)
 
 	d, c, bz, err := HTTPGet(p.URL, p.Timeout)
 
@@ -50,7 +54,7 @@ func (p *HTTPGetProbe) Probe(name string) {
 	p.Status.ProbedAt = time.Now()
 	p.Status.Duration = d
 
-	httpget_time.With(prometheus.Labels{"probe": name}).Set(float64(d.Microseconds()))
+	httpget_time.With(prometheus.Labels{"probe": name}).Observe(float64(d.Milliseconds()))
 
 }
 

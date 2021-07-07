@@ -1,6 +1,7 @@
 package network
 
 import (
+	"log"
 	"time"
 
 	"github.com/middlewaregruppen/probear/pkg/k8s"
@@ -41,5 +42,8 @@ func (nt *NetworkTarget) Probe() {
 		nt.TCPSession.Probe(nt.Name)
 	}
 
-	k8s.GetProbearPods()
+	_, err := k8s.GetProbearPods()
+	if err != nil {
+		log.Printf("err getting probear pods: %s ", err)
+	}
 }

@@ -174,6 +174,8 @@ func TCPSessionClient(addr string, interval time.Duration, timeout time.Duration
 	}
 }
 
+/* 	TCPSessionServer accepts tcp connections and waits on a message.
+Once a message is received it is echoed back to the client. */
 func TCPSessionServer(port int) {
 	laddr := fmt.Sprintf("0.0.0.0:%d", port)
 	l, err := net.Listen("tcp", laddr)
@@ -191,11 +193,11 @@ func TCPSessionServer(port int) {
 		log.Printf("tcp session server: connection from %s", conn.RemoteAddr())
 
 		// handle connection
-		go HandleSessionConn(conn)
+		go handleSessionConn(conn)
 	}
 }
 
-func HandleSessionConn(c net.Conn) {
+func handleSessionConn(c net.Conn) {
 	defer c.Close()
 
 	for {
