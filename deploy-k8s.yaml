@@ -86,4 +86,19 @@ data:
           addr: 127.0.0.1:10000
           timeout: 5
 ...
-
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    app: probear
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  name: probear
+spec:
+  podMetricsEndpoints:
+  - port: 2112
+  selector:
+    matchLabels:
+      app: probear
+...
