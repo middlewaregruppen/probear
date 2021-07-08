@@ -9,7 +9,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func GetProbearPods() ([]string, error) {
+type ProbearPods struct {
+	Name string
+	Addr string
+	Node string
+}
+
+func GetProbearPods() ([]ProbearPods, error) {
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -28,10 +34,13 @@ func GetProbearPods() ([]string, error) {
 	}
 	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
-	var res = make([]string, pods.Size())
+	var res = make([]ProbearPods, pods.Size())
 
 	for k, p := range pods.Items {
-		res[k] = p.GetName()
+		res[k].Name = p.GetName()
+		res[k].Addr = p.Status.PodIP
+		res[k].Node = p.Spec.NodeName
+
 	}
 
 	return res, nil

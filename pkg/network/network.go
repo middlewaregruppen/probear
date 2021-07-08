@@ -48,22 +48,19 @@ func (n *Network) updateProbearK8STargets() {
 	// Add new pods.
 	for _, p1 := range pods {
 
-		if len(p1) < 1 {
-			continue
-		}
-		name := fmt.Sprintf("to %s", p1)
+		name := fmt.Sprintf("%s", p1)
 		if registered(n.ProbearTargets, name) {
 			continue
 		}
 		n.ProbearTargets = append(n.ProbearTargets,
 			NetworkTarget{
-				Name: fmt.Sprintf("%s", p1),
+				Name: fmt.Sprintf("%s", p1.Name),
 				TCPConnect: &TCPConnectProbe{
-					Addr:    fmt.Sprintf("%s:2112", p1),
+					Addr:    fmt.Sprintf("%s:2112", p1.Addr),
 					Timeout: 10,
 				},
 				TCPSession: &TCPSessionProbe{
-					Addr:    fmt.Sprintf("%s:10000", p1),
+					Addr:    fmt.Sprintf("%s:10000", p1.Addr),
 					Timeout: 10,
 				},
 			})
@@ -99,9 +96,9 @@ func registered(nts []NetworkTarget, name string) bool {
 	return false
 }
 
-func contains(s []string, e string) bool {
+func contains(s []k8s.ProbearPods, e string) bool {
 	for _, a := range s {
-		if a == e {
+		if a.Name == e {
 			return true
 		}
 	}
