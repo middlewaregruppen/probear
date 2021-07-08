@@ -34,7 +34,7 @@ func GetProbearPods() ([]ProbearPods, error) {
 	}
 	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
-	var res = make([]ProbearPods, pods.Size())
+	var res = make([]ProbearPods, len(pods.Items))
 
 	for k, p := range pods.Items {
 		res[k].Name = p.GetName()
