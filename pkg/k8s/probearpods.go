@@ -42,6 +42,7 @@ func GetProbearPods() ([]ProbearPods, error) {
 		res[k].Node = p.Spec.NodeName
 
 	}
+	fmt.Printf("Targets: %+v", res)
 
 	return res, nil
 }
