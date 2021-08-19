@@ -32,6 +32,7 @@ type TCPSessionProbe struct {
 	Addr    string            `json:"addr"`
 	Timeout int               `json:"timeout"`
 	Status  *TCPSessionStatus `json:"status"`
+	Labels  prometheus.Labels `json:"-"`
 	started bool
 }
 
@@ -52,22 +53,22 @@ type res struct {
 	err              error
 }
 
-func (t *TCPSessionProbe) Probe(name string) {
+func (t *TCPSessionProbe) Probe() {
 
 	if !t.started {
 		t.Status = &TCPSessionStatus{}
-		go t.runClient(name)
+		go t.runClient()
 		t.started = true
 	}
 	t.Status.ProbedAt = time.Now()
 
 }
 
-func (t *TCPSessionProbe) runClient(name string) error {
+func (t *TCPSessionProbe) runClient() error {
 
 	// Set vectors to 0 so they register with prometheus.
-	tcpsession_failed.With(prometheus.Labels{"probe": name}).Add(0)
-	tcpsession_failed_conn.With(prometheus.Labels{"probe": name}).Add(0)
+	tcpsession_failed.With(t.Labels).Add(0)
+	tcpsession_failed_conn.With(t.Labels).Add(0)
 
 	reschan := make(chan res, 10)
 
@@ -96,19 +97,19 @@ func (t *TCPSessionProbe) runClient(name string) error {
 
 		// Update status
 		if d.failedConnection {
-			tcpsession_failed_conn.With(prometheus.Labels{"probe": name}).Inc()
+			tcpsession_failed_conn.With(t.Labels).Inc()
 			t.Status.FailedConnections++
 			t.Status.FailureReasons[d.err.Error()]++
 		}
 		if d.failedSession {
-			tcpsession_failed.With(prometheus.Labels{"probe": name}).Inc()
+			tcpsession_failed.With(t.Labels).Inc()
 			t.Status.FailedSessions++
 			t.Status.FailureReasons[d.err.Error()]++
 		}
 
 		// Prometheus histogram
 		if d.duration > 0 {
-			tcpsession_time.With(prometheus.Labels{"probe": name}).Observe(float64(d.duration.Milliseconds()))
+			tcpsession_time.With(t.Labels).Observe(float64(d.duration.Milliseconds()))
 		}
 		if d.duration > t.Status.MaxDuration {
 			t.Status.MaxDuration = d.duration

@@ -26,25 +26,26 @@ type TCPConnectProbe struct {
 	Addr    string            `json:"addr"`
 	Timeout int               `json:"timeout"`
 	Status  *TCPConnectStatus `json:"status"`
+	Labels  prometheus.Labels `json:"-"`
 }
 
 type TCPConnectStatus struct {
 	Status
 }
 
-func (tc *TCPConnectProbe) Probe(name string) {
+func (tc *TCPConnectProbe) Probe() {
 	d, err := TCPConnect(tc.Addr, tc.Timeout)
 
-	tcp_connect_failed.With(prometheus.Labels{"probe": name}).Add(0)
+	tcp_connect_failed.With(tc.Labels).Add(0)
 
 	tc.Status = &TCPConnectStatus{}
 	tc.Status.ProbedAt = time.Now()
 	tc.Status.Duration = d
 	if err != nil {
-		tcp_connect_failed.With(prometheus.Labels{"probe": name}).Inc()
+		tcp_connect_failed.With(tc.Labels).Inc()
 		tc.Status.Error = fmt.Sprintf("%s", err)
 	}
-	tcpconnect_time.With(prometheus.Labels{"probe": name}).Observe(float64(d.Milliseconds()))
+	tcpconnect_time.With(tc.Labels).Observe(float64(d.Milliseconds()))
 }
 
 func TCPConnect(addr string, timeout int) (time.Duration, error) {

@@ -3,9 +3,11 @@ package network
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/middlewaregruppen/probear/pkg/k8s"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Network struct {
@@ -48,15 +50,30 @@ func (n *Network) updateProbearK8STargets() {
 	// Add new pods.
 	for _, p1 := range pods {
 
-		name := fmt.Sprintf("%s", p1)
-		if registered(n.ProbearTargets, name) {
+		if registered(n.ProbearTargets, p1.Name) {
 			continue
 		}
+
+		hostname, _ := os.Hostname()
+		thisPod, err := k8s.GetPod(hostname)
+
+		if err != nil {
+			log.Printf("Can not find the pod that we are running on. %s", err)
+			continue
+		}
+
+		labels := prometheus.Labels{
+			"probename":  p1.Name,
+			"targetnode": p1.Node,
+			"sourcenode": thisPod.Node,
+		}
+
 		n.ProbearTargets = append(n.ProbearTargets,
 			NetworkTarget{
 				Name: fmt.Sprintf("%s", p1.Name),
 				TCPConnect: &TCPConnectProbe{
 					Addr:    fmt.Sprintf("%s:2112", p1.Addr),
+					Labels:  labels,
 					Timeout: 10,
 				},
 				TCPSession: &TCPSessionProbe{
@@ -79,10 +96,10 @@ func (nt *NetworkTarget) Probe() {
 		nt.HTTPGet.Probe(nt.Name)
 	}
 	if nt.TCPConnect != nil {
-		nt.TCPConnect.Probe(nt.Name)
+		nt.TCPConnect.Probe()
 	}
 	if nt.TCPSession != nil {
-		nt.TCPSession.Probe(nt.Name)
+		nt.TCPSession.Probe()
 	}
 
 }
@@ -96,7 +113,7 @@ func registered(nts []NetworkTarget, name string) bool {
 	return false
 }
 
-func contains(s []k8s.ProbearPods, e string) bool {
+func contains(s []k8s.ProbearPod, e string) bool {
 	for _, a := range s {
 		if a.Name == e {
 			return true
