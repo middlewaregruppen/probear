@@ -63,8 +63,8 @@ func (n *Network) updateProbearK8STargets() {
 		*/
 
 		labels := prometheus.Labels{
-			//"probename":  p1.Name,
-			"target": p1.Node,
+			"probename": p1.Node,
+			//"target": p1.Node,
 			//"sourcenode": thisPod.Node,
 		}
 
