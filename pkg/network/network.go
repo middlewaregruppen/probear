@@ -3,7 +3,6 @@ package network
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/middlewaregruppen/probear/pkg/k8s"
@@ -54,18 +53,19 @@ func (n *Network) updateProbearK8STargets() {
 			continue
 		}
 
-		hostname, _ := os.Hostname()
+		/* hostname, _ := os.Hostname()
 		thisPod, err := k8s.GetPod(hostname)
 
 		if err != nil {
 			log.Printf("Can not find the pod that we are running on. %s", err)
 			continue
 		}
+		*/
 
 		labels := prometheus.Labels{
-			"probename":  p1.Name,
-			"targetnode": p1.Node,
-			"sourcenode": thisPod.Node,
+			//"probename":  p1.Name,
+			"target": p1.Node,
+			//"sourcenode": thisPod.Node,
 		}
 
 		n.ProbearTargets = append(n.ProbearTargets,
