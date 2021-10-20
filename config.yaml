@@ -1,13 +1,32 @@
-network:
-  probes:
-  - name: Abba asdlökasd
-    httpGet:
-      url: http://stuff.co.nz
-      timeout: 10
-  - name: Betta
-    tcpConnect:
-      addr: google.com:443
-      timeout: 10
-    tcpSession:
-      addr: 127.0.0.1:10000
-      timeout: 5
+##########################################
+## Configuration for probear
+##########################################
+
+httpGetProbes:
+  - name: middleware-test 
+    url: http://middleware.se
+    timeout: 10
+    interval: 5
+    node: "localhost"
+    zone: "zaaz"
+    region: "zzzx"
+
+  - name: google-test
+    url: https://google.com
+    timeout: 5 
+    interval: 5
+    node: "a"
+    zone: "zzaaa"
+    region: "22"
+
+tcpConnectProbes:
+  - name: test-google
+    addr: google.com:443
+    timeout: 10
+    interval: 10
+
+tcpSessionProbes:
+  - name: test-local
+    addr: 127.0.0.1:10000
+    timeout: 5
+

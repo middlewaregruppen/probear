@@ -5,17 +5,25 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/ghodss/yaml"
-	"github.com/middlewaregruppen/probear/pkg/config"
-	"github.com/middlewaregruppen/probear/pkg/network"
+	"github.com/middlewaregruppen/probear/pkg/probe"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+var flagConfig string
+
+func init() {
+	flag.StringVar(&flagConfig, "config", "config.yaml", "path to config file")
+}
+
 func main() {
 
-	conf, err := ioutil.ReadFile("/config/probear.yaml")
+	flag.Parse()
+
+	conf, err := ioutil.ReadFile(flagConfig)
 	if err != nil {
 		log.Fatalf("error loading config %s", err)
 	}
@@ -26,36 +34,17 @@ func main() {
 	}
 	log.Printf("%s", out)
 
-	cnf := &config.Config{}
-	err = json.Unmarshal(out, cnf)
+	probes := &probe.Probes{}
+	err = json.Unmarshal(out, probes)
 	if err != nil {
 		log.Fatalf("error loading config %s", err)
 	}
-	log.Printf("%+v", cnf)
+	log.Printf("%+v", probes)
 
-	cnf.Network.Probe()
-
-	b, err := json.Marshal(cnf)
-	if err != nil {
-		log.Fatalf("error probing %s", err)
-	}
-	log.Printf("%s", b)
-
-	// Run the TCS Session Server.
-	go network.TCPSessionServer(10000)
+	probes.Start()
 
 	http.Handle("/metrics", promhttp.Handler())
-	go http.ListenAndServe(":2112", nil)
 
-	for {
-		time.Sleep(10 * time.Second)
-
-		cnf.Network.Probe()
-		b, err = json.Marshal(cnf)
-		if err != nil {
-			log.Fatalf("error probing %s", err)
-		}
-		log.Printf("%s", b)
-	}
+	http.ListenAndServe(":2112", nil)
 
 }

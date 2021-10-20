@@ -1,45 +1,25 @@
 package network
 
-import (
-	"fmt"
-	"log"
-	"time"
-
-	"github.com/middlewaregruppen/probear/pkg/k8s"
-	"github.com/prometheus/client_golang/prometheus"
-)
-
-type Network struct {
-	NetworkTargets []NetworkTarget `json:"probes"`
-	ProbearTargets []NetworkTarget `json:"probears"`
+func init() {
+	// Run the TCP Session Server.
+	go TCPSessionServer(10000)
 }
 
-type NetworkTarget struct {
-	Name       string           `json:"name"`
-	HTTPGet    *HTTPGetProbe    `json:"httpGet,omitempty"`
-	TCPConnect *TCPConnectProbe `json:"tcpConnect,omitempty"`
-	TCPSession *TCPSessionProbe `json:"tcpSession,omitempty"`
+type StdLabels struct {
+	Name      string `json:"name"`
+	Node      string `json:"node"`
+	Region    string `json:"region"`
+	Zone      string `json:"zone"`
+	isManaged bool   `json:"-"`
 }
 
-type Status struct {
-	ProbedAt time.Time     `json:"time"`
-	Duration time.Duration `json:"duration"`
-	Error    string        `json:"error"`
+func (l *StdLabels) GetName() string {
+	return l.Name
 }
 
-func (n *Network) Probe() {
-	for _, t := range n.NetworkTargets {
-		t.Probe()
-	}
+// internal k8s probing in the namespace.
 
-	n.updateProbearK8STargets()
-
-	for _, t := range n.ProbearTargets {
-		t.Probe()
-	}
-
-}
-
+/*
 func (n *Network) updateProbearK8STargets() {
 	pods, err := k8s.GetProbearPods()
 	if err != nil {
@@ -60,7 +40,7 @@ func (n *Network) updateProbearK8STargets() {
 			log.Printf("Can not find the pod that we are running on. %s", err)
 			continue
 		}
-		*/
+		*(/)
 
 		labels := prometheus.Labels{
 			"probename": p1.Node,
@@ -91,19 +71,6 @@ func (n *Network) updateProbearK8STargets() {
 
 }
 
-func (nt *NetworkTarget) Probe() {
-	if nt.HTTPGet != nil {
-		nt.HTTPGet.Probe(nt.Name)
-	}
-	if nt.TCPConnect != nil {
-		nt.TCPConnect.Probe()
-	}
-	if nt.TCPSession != nil {
-		nt.TCPSession.Probe()
-	}
-
-}
-
 func registered(nts []NetworkTarget, name string) bool {
 	for _, t := range nts {
 		if t.Name == name {
@@ -121,3 +88,4 @@ func contains(s []k8s.ProbearPod, e string) bool {
 	}
 	return false
 }
+*/

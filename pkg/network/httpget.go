@@ -2,7 +2,6 @@ package network
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -11,50 +10,53 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+/* HTTPGet retrives a document and meassures the time it takes and if there are any errors.
+ */
+
+type HTTPGetProbe struct {
+	URL     string `json:"url"`
+	Timeout int    `json:"timeout" default:"60"`
+	// interval in seconds that the resource should be probed after the last probe.
+	Interval int `json:"interval"`
+	// labels to add to the metric
+	StdLabels
+}
+
 var (
 	httpget_time = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "probear_httpget_time",
 		Help:    "Time in milliseconds it takes to retrive the document",
-		Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 1000, 10000, 100000},
-	}, []string{"probe"})
+		Buckets: []float64{0.1, 1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 1000, 10000, 100000},
+	}, []string{"name", "node", "region", "zone"})
 
 	httpget_error = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "probear_httpget_error",
+		Name: "probear_httpget_connection_error",
 		Help: "Error trying to retive url",
-	}, []string{"probe"})
+	}, []string{"name", "node", "region", "zone"})
 )
 
-type HTTPGetProbe struct {
-	URL     string      `json:"url"`
-	Timeout int         `json:"timeout" default:"60"`
-	Status  *HTTPStatus `json:"status"`
-}
-
-type HTTPStatus struct {
-	Status
-	ResponseCode    int `json:"responseCode"`
-	BytesInResponse int `json:"bytesInResponse"`
-}
-
-func (p *HTTPGetProbe) Probe(name string) {
+func (p *HTTPGetProbe) Start() {
 	// Add 0 to make sure it is exposed.
-	httpget_error.With(prometheus.Labels{"probe": name}).Add(0)
+	l := prometheus.Labels{"name": p.Name, "node": p.Node, "region": p.Region, "zone": p.Zone}
 
-	d, c, bz, err := HTTPGet(p.URL, p.Timeout)
-
-	p.Status = &HTTPStatus{
-		ResponseCode:    c,
-		BytesInResponse: bz,
-	}
-	if err != nil {
-		p.Status.Error = fmt.Sprintf("%s", err)
-		httpget_error.With(prometheus.Labels{"probe": name}).Inc()
+	if p.Interval < 1 {
+		p.Interval = 10
 	}
 
-	p.Status.ProbedAt = time.Now()
-	p.Status.Duration = d
+	httpget_error.With(l).Add(0)
 
-	httpget_time.With(prometheus.Labels{"probe": name}).Observe(float64(d.Milliseconds()))
+	go func() {
+		for {
+			d, _, _, err := HTTPGet(p.URL, p.Timeout)
+			if err != nil {
+				httpget_error.With(l).Inc()
+			}
+			httpget_time.With(l).Observe(float64(d.Milliseconds()))
+
+			time.Sleep(time.Second * time.Duration(p.Interval))
+		}
+
+	}()
 
 }
 
@@ -62,6 +64,7 @@ func (p *HTTPGetProbe) Probe(name string) {
    Returns the duration, http status code, response size in bytes and error.
 */
 func HTTPGet(url string, timeout int) (time.Duration, int, int, error) {
+
 	client := http.Client{
 		Timeout: time.Duration(timeout * int(time.Second)),
 		Transport: &http.Transport{

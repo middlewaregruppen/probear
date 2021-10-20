@@ -15,35 +15,29 @@ var (
 		Name:    "probear_tcpsession_pingpong_time",
 		Help:    "Time it takes to send a message to the server and have the message sent back from the server in milliseconds (ms)",
 		Buckets: []float64{0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 1000, 10000, 100000},
-	}, []string{"probe"})
+	}, []string{"name", "node", "region", "zone", "dstnode", "dstregion", "dstzone"})
 
 	tcpsession_failed = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "probear_tcpsession_failed_sessions",
 		Help: "Number of established sessions that has failed",
-	}, []string{"probe"})
+	}, []string{"name", "node", "region", "zone", "dstnode", "dstregion", "dstzone"})
 
 	tcpsession_failed_conn = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "probear_tcpsession_failed_connections",
 		Help: "Number of connections attempts that has failed",
-	}, []string{"probe"})
+	}, []string{"name", "node", "region", "zone", "dstnode", "dstregion", "dstzone"})
 )
 
 type TCPSessionProbe struct {
-	Addr    string            `json:"addr"`
-	Timeout int               `json:"timeout"`
-	Status  *TCPSessionStatus `json:"status"`
-	Labels  prometheus.Labels `json:"-"`
-	started bool
-}
+	Addr     string `json:"addr"`
+	Timeout  int    `json:"timeout"`
+	Interval int    `json:"interval"`
+	StdLabels
+	DestinationZone   string `json:"destinationZone"`
+	DestinationRegion string `json:"destinationRegion"`
+	DestinationNode   string `json:"destinationNode"`
 
-type TCPSessionStatus struct {
-	Status
-	FailedConnections int            `json:"failedConnections"`
-	FailedSessions    int            `json:"failedSessions"`
-	FailureReasons    map[string]int `json:"failureReasons"`
-	MaxDuration       time.Duration  `json:"maxPingLatency5m"`
-	MedianDuration    time.Duration  `json:"medianPingLatency5m"`
-	MinDuration       time.Duration  `json:"minPingLatency5m"`
+	started bool
 }
 
 type res struct {
@@ -53,77 +47,57 @@ type res struct {
 	err              error
 }
 
-func (t *TCPSessionProbe) Probe() {
+func (t *TCPSessionProbe) Start() {
 
 	if !t.started {
-		t.Status = &TCPSessionStatus{}
 		go t.runClient()
 		t.started = true
 	}
-	t.Status.ProbedAt = time.Now()
 
 }
 
 func (t *TCPSessionProbe) runClient() error {
+	l := prometheus.Labels{
+		"name":      t.Name,
+		"node":      t.Node,
+		"region":    t.Region,
+		"zone":      t.Zone,
+		"dstnode":   t.DestinationNode,
+		"dstregion": t.DestinationRegion,
+		"dstzone":   t.DestinationZone,
+	}
 
 	// Set vectors to 0 so they register with prometheus.
-	tcpsession_failed.With(t.Labels).Add(0)
-	tcpsession_failed_conn.With(t.Labels).Add(0)
+	tcpsession_failed.With(l).Add(0)
+	tcpsession_failed_conn.With(l).Add(0)
 
 	reschan := make(chan res, 10)
 
-	go TCPSessionClient(t.Addr, time.Second, time.Second*5, reschan)
+	if t.Interval < 1 {
+		t.Interval = 1
+	}
+	if t.Timeout < 1 {
+		t.Interval = 10
+	}
 
-	t.Status.FailureReasons = make(map[string]int, 100)
-
-	var pings int64
-
-	resetted := time.Now()
+	go TCPSessionClient(t.Addr, time.Second*time.Duration(t.Interval), time.Second*time.Duration(t.Timeout), reschan)
 
 	for {
 
 		d := <-reschan
 
-		if time.Since(resetted) > 1*time.Minute {
-			t.Status = &TCPSessionStatus{}
-			t.Status.FailureReasons = make(map[string]int, 100)
-			pings = 0
-			resetted = time.Now()
-		}
-
-		t.Status.Duration = d.duration
-
-		pings++
-
 		// Update status
 		if d.failedConnection {
-			tcpsession_failed_conn.With(t.Labels).Inc()
-			t.Status.FailedConnections++
-			t.Status.FailureReasons[d.err.Error()]++
+			tcpsession_failed_conn.With(l).Inc()
 		}
 		if d.failedSession {
-			tcpsession_failed.With(t.Labels).Inc()
-			t.Status.FailedSessions++
-			t.Status.FailureReasons[d.err.Error()]++
+			tcpsession_failed.With(l).Inc()
 		}
 
 		// Prometheus histogram
 		if d.duration > 0 {
-			tcpsession_time.With(t.Labels).Observe(float64(d.duration.Milliseconds()))
+			tcpsession_time.With(l).Observe(float64(d.duration.Milliseconds()))
 		}
-		if d.duration > t.Status.MaxDuration {
-			t.Status.MaxDuration = d.duration
-
-		}
-
-		if d.duration < t.Status.MinDuration || t.Status.MinDuration == 0 {
-			t.Status.MinDuration = d.duration
-		}
-
-		// Calculate median time
-		tt := t.Status.MedianDuration.Nanoseconds() * (pings - 1)
-		t.Status.MedianDuration = time.Duration(((tt + d.duration.Nanoseconds()) / pings))
-
 	}
 
 }

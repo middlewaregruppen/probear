@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"net"
 	"time"
 
@@ -9,43 +8,49 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+type TCPConnectProbe struct {
+	Addr     string `json:"addr"`
+	Timeout  int    `json:"timeout"`
+	Interval int    `json:"interval"`
+	StdLabels
+}
+
 var (
 	tcpconnect_time = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "probear_tcpconnect_time",
 		Help:    "Probear tcp connect time in milliseconds",
-		Buckets: []float64{0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 1000, 10000, 100000},
-	}, []string{"probe"})
+		Buckets: []float64{0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 1000, 10000},
+	}, []string{"name", "node", "region", "zone"})
 
 	tcp_connect_failed = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "probear_tcpconnect_failed_connections",
 		Help: "Number of connections failed",
-	}, []string{"probe"})
+	}, []string{"name", "node", "region", "zone"})
 )
 
-type TCPConnectProbe struct {
-	Addr    string            `json:"addr"`
-	Timeout int               `json:"timeout"`
-	Status  *TCPConnectStatus `json:"status"`
-	Labels  prometheus.Labels `json:"-"`
-}
+func (tc *TCPConnectProbe) Start() {
 
-type TCPConnectStatus struct {
-	Status
-}
-
-func (tc *TCPConnectProbe) Probe() {
-	d, err := TCPConnect(tc.Addr, tc.Timeout)
-
-	tcp_connect_failed.With(tc.Labels).Add(0)
-
-	tc.Status = &TCPConnectStatus{}
-	tc.Status.ProbedAt = time.Now()
-	tc.Status.Duration = d
-	if err != nil {
-		tcp_connect_failed.With(tc.Labels).Inc()
-		tc.Status.Error = fmt.Sprintf("%s", err)
+	if tc.Interval < 1 {
+		tc.Interval = 10
 	}
-	tcpconnect_time.With(tc.Labels).Observe(float64(d.Milliseconds()))
+
+	l := prometheus.Labels{"name": tc.Name, "node": tc.Node, "region": tc.Region, "zone": tc.Zone}
+
+	tcp_connect_failed.With(l).Add(0)
+
+	go func() {
+		for {
+
+			d, err := TCPConnect(tc.Addr, tc.Timeout)
+
+			if err != nil {
+				tcp_connect_failed.With(l).Inc()
+			}
+			tcpconnect_time.With(l).Observe(float64(d.Milliseconds()))
+			time.Sleep(time.Second * time.Duration(tc.Interval))
+		}
+	}()
+
 }
 
 func TCPConnect(addr string, timeout int) (time.Duration, error) {
