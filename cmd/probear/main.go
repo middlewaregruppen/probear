@@ -43,8 +43,8 @@ func main() {
 
 	probes.Start()
 
-	k8sprobes := probe.K8SProbes{}
-	k8sprobes.Scan(10)
+	//k8sprobes := probe.K8SProbes{}
+	//k8sprobes.Scan(10)
 
 	http.Handle("/metrics", promhttp.Handler())
 
