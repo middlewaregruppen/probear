@@ -26,8 +26,8 @@ func (p *Probes) Start() {
 	for _, p := range p.HTTPGet {
 		p.Start()
 	}
-	for _, p := range p.TCPConnect {
-		go p.Run()
+	for i, _ := range p.TCPConnect {
+		go p.TCPConnect[i].Run()
 	}
 	for _, p := range p.TCPSession {
 		p.Start()
