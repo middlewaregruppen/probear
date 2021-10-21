@@ -57,6 +57,7 @@ func TCPConnect(addr string, timeout int) (time.Duration, error) {
 	start := time.Now()
 	conn, err := net.DialTimeout("tcp", addr, time.Duration(timeout*int(time.Second)))
 	if err != nil {
+		log.Printf("TCPConnectError to %s: %s", addr, err)
 		duration := time.Since(start)
 		return duration, err
 	}
