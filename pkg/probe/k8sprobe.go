@@ -67,6 +67,7 @@ func (p *K8SProbes) PopulateProbearPods() {
 		new.DestinationZone = dst.Zone
 
 		p.Probes.TCPSession = append(p.Probes.TCPSession, new)
+
 		new.Start()
 
 	}

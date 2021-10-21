@@ -29,7 +29,7 @@ var (
 	}, []string{"name", "node", "region", "zone"})
 )
 
-func (tc *TCPConnectProbe) Start() {
+func (tc *TCPConnectProbe) Run() {
 
 	if tc.Interval < 1 {
 		tc.Interval = 10
@@ -38,20 +38,16 @@ func (tc *TCPConnectProbe) Start() {
 	l := prometheus.Labels{"name": tc.Name, "node": tc.Node, "region": tc.Region, "zone": tc.Zone}
 
 	tcp_connect_failed.With(l).Add(0)
+	for {
 
-	go func() {
-		for {
+		d, err := TCPConnect(tc.Addr, tc.Timeout)
 
-			d, err := TCPConnect(tc.Addr, tc.Timeout)
-
-			if err != nil {
-				tcp_connect_failed.With(l).Inc()
-			}
-			tcpconnect_time.With(l).Observe(float64(d.Milliseconds()))
-			time.Sleep(time.Second * time.Duration(tc.Interval))
+		if err != nil {
+			tcp_connect_failed.With(l).Inc()
 		}
-	}()
-
+		tcpconnect_time.With(l).Observe(float64(d.Milliseconds()))
+		time.Sleep(time.Second * time.Duration(tc.Interval))
+	}
 }
 
 func TCPConnect(addr string, timeout int) (time.Duration, error) {
