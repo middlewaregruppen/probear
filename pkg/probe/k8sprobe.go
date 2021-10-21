@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -44,14 +45,18 @@ func (p *K8SProbes) PopulateProbearPods() {
 			continue
 		}
 
-		// Check if it already exists..
+		// If the pod has not recived an ip yet .
+		if len(dst.Addr) < 5 {
+			continue
+		}
 
+		// Check if it already exists..
 		if p.Probes.HasTCPSession(thisPod.Name) {
 			continue
 		}
 
 		new := network.TCPSessionProbe{
-			Addr: dst.Addr,
+			Addr: fmt.Sprintf("%s:10000", dst.Addr),
 		}
 		new.Name = dst.Name
 		new.Zone = thisPod.Zone
