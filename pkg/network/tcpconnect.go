@@ -30,7 +30,7 @@ var (
 )
 
 func (tc *TCPConnectProbe) Run() {
-
+	log.Printf("starting the probe %s, %s ", tc.Name, tc.Addr)
 	if tc.Interval < 1 {
 		tc.Interval = 10
 	}
