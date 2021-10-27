@@ -30,3 +30,10 @@ tcpSessionProbes:
     addr: 127.0.0.1:10000
     timeout: 5
 
+dnsProbes:
+  - name: duckduckgo.com
+    host: duckduckgo.com
+    interval: 5
+  - name: 52.142.124.215
+    host: 52.142.124.215
+    interval: 5
