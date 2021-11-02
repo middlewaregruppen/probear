@@ -7,7 +7,8 @@ import (
 type Probes struct {
 	HTTPGet    []network.HTTPGetProbe    `json:"httpGetProbes,omitempty"`
 	TCPConnect []network.TCPConnectProbe `json:"tcpConnectProbes,omitempty"`
-	TCPSession []network.TCPSessionProbe `json:"tcpSessionProbes,omitempty"`
+	TCPSession   []network.TCPSessionProbe `json:"tcpSessionProbes,omitempty"`
+	DNS   []network.DNSProbe `json:"dnsProbes,omitempty"`
 }
 
 func (p *Probes) HasTCPSession(name string) bool {
@@ -32,5 +33,8 @@ func (p *Probes) Start() {
 	for _, p := range p.TCPSession {
 		p.Start()
 	}
+    for i := range p.DNS {
+        p.DNS[i].Start()
+    }
 
 }
