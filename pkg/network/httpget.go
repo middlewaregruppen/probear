@@ -10,8 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-/* HTTPGet retrives a document and meassures the time it takes and if there are any errors.
- */
+
 
 type HTTPGetProbe struct {
 	URL     string `json:"url"`

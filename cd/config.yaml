@@ -37,3 +37,4 @@ dnsProbes:
   - name: 52.142.124.215
     host: 52.142.124.215
     interval: 5
+

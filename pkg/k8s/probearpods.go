@@ -11,6 +11,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+/* ProbearPod is an represtaion of a pod. 
+*  It contains the basics, name, address and location of the pod.
+*/
 type ProbearPod struct {
 	Name   string
 	Addr   string
@@ -18,6 +21,11 @@ type ProbearPod struct {
 	Region string
 	Zone   string
 }
+
+/* GetProbearPods scans the cluster for instances of Probear in the namespace
+*  that the pod is currently running in.
+*  The label app=probear must be present on the pod.
+*/
 
 func GetProbearPods() ([]ProbearPod, error) {
 	// creates the in-cluster config
